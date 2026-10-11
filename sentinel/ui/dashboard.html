@@ -26,6 +26,7 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
+
       background:
         repeating-linear-gradient(
           to bottom,
@@ -148,6 +149,19 @@
       letter-spacing: 3px;
       margin-bottom: 15px;
       color: #00ff88;
+    }
+
+    .host-row {
+      border-bottom: 1px dashed #006d3b;
+      padding: 12px 0;
+      line-height: 1.6;
+      color: #baffd7;
+    }
+
+    .host-name {
+      color: #00ff88;
+      font-weight: bold;
+      font-size: 15px;
     }
 
     #reasons {
@@ -295,6 +309,18 @@
     <div class="panel">
 
       <div class="panel-title">
+        > MONITORED HOSTS
+      </div>
+
+      <div id="hostsList">
+        > Loading hosts...
+      </div>
+
+    </div>
+
+    <div class="panel">
+
+      <div class="panel-title">
         > LIVE TELEMETRY
       </div>
 
@@ -337,6 +363,7 @@
   </div>
 
   <script>
+
     const hostname = "Sasacatt";
 
     const chartOptions = {
@@ -494,6 +521,7 @@
         ).innerText =
           data.metrics.connections;
 
+
         if (data.reasons.length === 0) {
 
           document.getElementById(
@@ -514,6 +542,7 @@
               .join("<br>");
 
         }
+
 
         document.getElementById(
           "baseline"
@@ -538,6 +567,90 @@
     }
 
 
+    async function loadHosts() {
+
+      try {
+
+        const response = await fetch(
+          "/api/v1/hosts"
+        );
+
+        const data = await response.json();
+
+        const container =
+          document.getElementById(
+            "hostsList"
+          );
+
+        if (!data.hosts ||
+            data.hosts.length === 0) {
+
+          container.innerHTML =
+            "> No hosts detected.";
+
+          return;
+        }
+
+
+        container.innerHTML =
+          data.hosts
+            .map(
+              host => `
+                <div class="host-row">
+
+                  <div class="host-name">
+                    > ${host.hostname}
+                  </div>
+
+                  STATUS:
+                  ${host.status}
+
+                  &nbsp; | &nbsp;
+
+                  RISK:
+                  ${host.risk_score}%
+
+                  <br>
+
+                  CPU:
+                  ${host.cpu}%
+
+                  &nbsp; | &nbsp;
+
+                  RAM:
+                  ${host.memory}%
+
+                  &nbsp; | &nbsp;
+
+                  CONNECTIONS:
+                  ${host.connections}
+
+                  <br>
+
+                  SAMPLES:
+                  ${host.samples}
+
+                </div>
+              `
+            )
+            .join("");
+
+      } catch (error) {
+
+        document.getElementById(
+          "hostsList"
+        ).innerText =
+          "> Unable to load hosts.";
+
+        console.error(
+          "Erro ao carregar hosts:",
+          error
+        );
+
+      }
+    }
+
+
     async function loadHistory() {
 
       try {
@@ -548,15 +661,17 @@
 
         const data = await response.json();
 
-        const labels = data.history.map(
-          item =>
-            new Date(
-              item.timestamp
-            ).toLocaleTimeString()
-        );
+        const labels =
+          data.history.map(
+            item =>
+              new Date(
+                item.timestamp
+              ).toLocaleTimeString()
+          );
 
 
-        cpuChart.data.labels = labels;
+        cpuChart.data.labels =
+          labels;
 
         cpuChart.data.datasets[0].data =
           data.history.map(
@@ -567,7 +682,8 @@
         cpuChart.update();
 
 
-        memoryChart.data.labels = labels;
+        memoryChart.data.labels =
+          labels;
 
         memoryChart.data.datasets[0].data =
           data.history.map(
@@ -578,7 +694,8 @@
         memoryChart.update();
 
 
-        connectionsChart.data.labels = labels;
+        connectionsChart.data.labels =
+          labels;
 
         connectionsChart.data.datasets[0].data =
           data.history.map(
@@ -600,10 +717,17 @@
 
 
     loadDashboard();
+    loadHosts();
     loadHistory();
+
 
     setInterval(
       loadDashboard,
+      5000
+    );
+
+    setInterval(
+      loadHosts,
       5000
     );
 

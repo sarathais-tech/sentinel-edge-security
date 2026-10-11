@@ -131,6 +131,33 @@ def get_recent_metrics(hostname, limit=30):
         }
         for row in rows
     ]
+def get_hosts():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            hostname,
+            COUNT(*) as samples,
+            MAX(id) as last_id
+        FROM metrics
+        GROUP BY hostname
+        ORDER BY hostname
+        """
+    )
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [
+        {
+            "hostname": row[0],
+            "samples": row[1],
+            "last_id": row[2],
+        }
+        for row in rows
+    ]
     conn.commit()
     conn.close()
 

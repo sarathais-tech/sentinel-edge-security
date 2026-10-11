@@ -5,6 +5,7 @@ from sentinel.storage.database import (
     save_metrics,
     get_latest_metrics,
     get_recent_metrics,
+    get_hosts,
 )
 from sentinel.baseline.baseline_service import calculate_baseline
 from sentinel.analysis.baseline_analyzer import analyze_with_baseline
@@ -122,4 +123,35 @@ def get_history(hostname: str, limit: int = 30):
             hostname,
             limit,
         ),
+    }
+
+@app.get("/api/v1/hosts")
+def list_hosts():
+    hosts = get_hosts()
+
+    result = []
+
+    for host in hosts:
+        latest = get_latest_metrics(host["hostname"])
+        baseline = calculate_baseline(host["hostname"])
+
+        analysis = analyze_with_baseline(
+            latest,
+            baseline,
+        )
+
+        result.append(
+            {
+                "hostname": host["hostname"],
+                "samples": host["samples"],
+                "status": analysis["status"],
+                "risk_score": analysis["risk_score"],
+                "cpu": latest["cpu_percent"],
+                "memory": latest["memory_percent"],
+                "connections": latest["active_connections"],
+            }
+        )
+
+    return {
+        "hosts": result
     }
