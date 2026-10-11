@@ -1,5 +1,6 @@
 import psutil
 import socket
+import time
 
 from sentinel.agent.client import send_metrics
 
@@ -23,38 +24,43 @@ def collect_system_metrics():
 
 
 if __name__ == "__main__":
-    data = collect_system_metrics()
-
     print("\nSENTINEL AGENT")
     print("------------------------")
-    print(f"Host: {data['hostname']}")
-    print(f"CPU: {data['cpu_percent']}%")
-    print(f"RAM: {data['memory_percent']}%")
-    print(f"Conexões: {data['active_connections']}")
+    print("Monitoramento iniciado.")
+    print("Intervalo: 60 segundos")
+    print("Pressione Ctrl+C para encerrar.\n")
 
-    server_result = send_metrics(data)
+    try:
+        while True:
+            data = collect_system_metrics()
 
-    print("\nSENTINEL SERVER")
-    print("------------------------")
+            print("------------------------")
+            print(f"Host: {data['hostname']}")
+            print(f"CPU: {data['cpu_percent']}%")
+            print(f"RAM: {data['memory_percent']}%")
+            print(f"Conexões: {data['active_connections']}")
 
-    if server_result["success"]:
-        print("Métricas enviadas com sucesso.")
+            server_result = send_metrics(data)
 
-        response = server_result["response"]
-        analysis = response["analysis"]
-        baseline = response["baseline"]
+            if server_result["success"]:
+                response = server_result["response"]
+                analysis = response["analysis"]
+                baseline = response["baseline"]
 
-        print("\nANÁLISE DO SERVIDOR")
-        print("------------------------")
-        print(f"Status: {analysis['status']}")
-        print(f"Risk Score: {analysis['risk_score']}%")
-        print(f"Amostras do baseline: {baseline['samples']}")
+                print(f"Status: {analysis['status']}")
+                print(f"Risk Score: {analysis['risk_score']}%")
+                print(f"Baseline: {baseline['samples']} amostras")
 
-        if analysis["reasons"]:
-            print("\nMotivos:")
-            for reason in analysis["reasons"]:
-                print(f"- {reason}")
+                if analysis["reasons"]:
+                    print("Motivos:")
+                    for reason in analysis["reasons"]:
+                        print(f"- {reason}")
+            else:
+                print("Falha ao enviar métricas.")
+                print(server_result["error"])
 
-    else:
-        print("Falha ao enviar métricas.")
-        print(server_result["error"])
+            print("\nPróxima coleta em 60 segundos...\n")
+            time.sleep(60)
+
+    except KeyboardInterrupt:
+        print("\nSentinel Agent encerrado.")

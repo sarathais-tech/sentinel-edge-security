@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Sentinel Security Console</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #020403;
+      color: #00ff88;
+      font-family: "Courier New", Consolas, monospace;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(0, 255, 136, 0.025),
+          rgba(0, 255, 136, 0.025) 1px,
+          transparent 1px,
+          transparent 4px
+        );
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      padding: 28px;
+    }
+
+    .header {
+      border-bottom: 1px solid #00ff88;
+      padding-bottom: 15px;
+      margin-bottom: 22px;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 7px;
+      text-shadow: 0 0 12px rgba(0, 255, 136, 0.75);
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: #65ffad;
+      font-size: 13px;
+      letter-spacing: 2px;
+    }
+
+    .system-line {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #00b863;
+    }
+
+    .status-card {
+      border: 1px solid #00ff88;
+      padding: 22px;
+      margin-bottom: 18px;
+      background: rgba(0, 255, 136, 0.025);
+      box-shadow: inset 0 0 20px rgba(0, 255, 136, 0.04);
+    }
+
+    .label {
+      color: #00b863;
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    .hostname {
+      font-size: 18px;
+      margin: 7px 0 18px;
+      color: #d2ffe8;
+    }
+
+    .status {
+      font-size: 28px;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(0, 255, 136, 0.8);
+    }
+
+    .risk-container {
+      margin-top: 18px;
+    }
+
+    .risk-number {
+      font-size: 48px;
+      color: #d2ffe8;
+    }
+
+    .risk-bar {
+      height: 14px;
+      border: 1px solid #00ff88;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .risk-fill {
+      height: 100%;
+      width: 0%;
+      background: #00ff88;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 10px #00ff88;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      border: 1px solid #006d3b;
+      padding: 18px;
+      background: rgba(0, 255, 136, 0.018);
+    }
+
+    .value {
+      font-size: 28px;
+      margin-top: 9px;
+      color: #d2ffe8;
+    }
+
+    .panel {
+      border: 1px solid #006d3b;
+      padding: 20px;
+      background: rgba(0, 255, 136, 0.018);
+      margin-bottom: 18px;
+    }
+
+    .panel-title {
+      letter-spacing: 3px;
+      margin-bottom: 15px;
+      color: #00ff88;
+    }
+
+    #reasons {
+      line-height: 1.7;
+      color: #baffd7;
+    }
+
+    .baseline {
+      border-top: 1px dashed #006d3b;
+      margin-top: 18px;
+      padding-top: 12px;
+      color: #00b863;
+      font-size: 12px;
+    }
+
+    .chart-wrapper {
+      height: 220px;
+      margin-bottom: 22px;
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #006d3b;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 9px;
+      height: 15px;
+      background: #00ff88;
+      margin-left: 5px;
+      animation: blink 1s steps(1) infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <div class="logo">
+        SENTINEL<span class="cursor"></span>
+      </div>
+
+      <div class="subtitle">
+        EDGE SECURITY INTELLIGENCE APPLIANCE
+      </div>
+
+      <div class="system-line">
+        [ SYSTEM NODE ACTIVE ] [ MONITORING ENABLED ]
+      </div>
+    </div>
+
+    <div class="status-card">
+
+      <div class="label">
+        // TARGET HOST
+      </div>
+
+      <div class="hostname" id="hostname">
+        INITIALIZING...
+      </div>
+
+      <div class="label">
+        // SECURITY STATE
+      </div>
+
+      <div class="status" id="status">
+        SCANNING
+      </div>
+
+      <div class="risk-container">
+
+        <div class="label">
+          // RISK SCORE
+        </div>
+
+        <div class="risk-number">
+          <span id="risk">0</span>%
+        </div>
+
+        <div class="risk-bar">
+          <div
+            class="risk-fill"
+            id="riskFill">
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="label">
+          // CPU LOAD
+        </div>
+
+        <div class="value" id="cpu">
+          --%
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">
+          // MEMORY
+        </div>
+
+        <div class="value" id="memory">
+          --%
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">
+          // CONNECTIONS
+        </div>
+
+        <div class="value" id="connections">
+          --
+        </div>
+      </div>
+
+    </div>
+
+    <div class="panel">
+
+      <div class="panel-title">
+        > LIVE TELEMETRY
+      </div>
+
+      <div class="chart-wrapper">
+        <canvas id="cpuChart"></canvas>
+      </div>
+
+      <div class="chart-wrapper">
+        <canvas id="memoryChart"></canvas>
+      </div>
+
+      <div class="chart-wrapper">
+        <canvas id="connectionsChart"></canvas>
+      </div>
+
+    </div>
+
+    <div class="panel">
+
+      <div class="panel-title">
+        > THREAT ANALYSIS
+      </div>
+
+      <div id="reasons">
+        Waiting for telemetry...
+      </div>
+
+      <div
+        class="baseline"
+        id="baseline">
+      </div>
+
+    </div>
+
+    <div class="footer">
+      SENTINEL NODE // LOCAL SECURITY MONITOR //
+      REFRESH RATE: 5 SEC
+    </div>
+
+  </div>
+
+  <script>
+    const hostname = "Sasacatt";
+
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+
+      plugins: {
+        legend: {
+          labels: {
+            color: "#00ff88",
+            font: {
+              family: "Courier New"
+            }
+          }
+        }
+      },
+
+      scales: {
+        x: {
+          ticks: {
+            color: "#006d3b",
+            maxTicksLimit: 8
+          },
+
+          grid: {
+            color: "rgba(0,255,136,0.08)"
+          }
+        },
+
+        y: {
+          ticks: {
+            color: "#00b863"
+          },
+
+          grid: {
+            color: "rgba(0,255,136,0.08)"
+          }
+        }
+      }
+    };
+
+
+    const cpuChart = new Chart(
+      document.getElementById("cpuChart"),
+      {
+        type: "line",
+
+        data: {
+          labels: [],
+
+          datasets: [{
+            label: "CPU %",
+            data: [],
+            borderColor: "#00ff88",
+            backgroundColor: "rgba(0,255,136,0.08)",
+            tension: 0.25,
+            fill: true,
+            pointRadius: 1
+          }]
+        },
+
+        options: chartOptions
+      }
+    );
+
+
+    const memoryChart = new Chart(
+      document.getElementById("memoryChart"),
+      {
+        type: "line",
+
+        data: {
+          labels: [],
+
+          datasets: [{
+            label: "MEMORY %",
+            data: [],
+            borderColor: "#00ff88",
+            backgroundColor: "rgba(0,255,136,0.08)",
+            tension: 0.25,
+            fill: true,
+            pointRadius: 1
+          }]
+        },
+
+        options: chartOptions
+      }
+    );
+
+
+    const connectionsChart = new Chart(
+      document.getElementById("connectionsChart"),
+      {
+        type: "line",
+
+        data: {
+          labels: [],
+
+          datasets: [{
+            label: "CONNECTIONS",
+            data: [],
+            borderColor: "#00ff88",
+            backgroundColor: "rgba(0,255,136,0.08)",
+            tension: 0.25,
+            fill: true,
+            pointRadius: 1
+          }]
+        },
+
+        options: chartOptions
+      }
+    );
+
+
+    async function loadDashboard() {
+
+      try {
+
+        const response = await fetch(
+          `/api/v1/dashboard/${hostname}`
+        );
+
+        const data = await response.json();
+
+        document.getElementById(
+          "hostname"
+        ).innerText = data.hostname;
+
+        document.getElementById(
+          "status"
+        ).innerText = data.status;
+
+        document.getElementById(
+          "risk"
+        ).innerText = data.risk_score;
+
+        document.getElementById(
+          "riskFill"
+        ).style.width =
+          data.risk_score + "%";
+
+        document.getElementById(
+          "cpu"
+        ).innerText =
+          data.metrics.cpu + "%";
+
+        document.getElementById(
+          "memory"
+        ).innerText =
+          data.metrics.memory + "%";
+
+        document.getElementById(
+          "connections"
+        ).innerText =
+          data.metrics.connections;
+
+        if (data.reasons.length === 0) {
+
+          document.getElementById(
+            "reasons"
+          ).innerText =
+            "> No anomalous behavior detected.";
+
+        } else {
+
+          document.getElementById(
+            "reasons"
+          ).innerHTML =
+            data.reasons
+              .map(
+                reason =>
+                  "> " + reason
+              )
+              .join("<br>");
+
+        }
+
+        document.getElementById(
+          "baseline"
+        ).innerText =
+          `BASELINE SAMPLES: ${data.baseline.samples}`;
+
+      } catch (error) {
+
+        document.getElementById(
+          "status"
+        ).innerText =
+          "OFFLINE";
+
+        document.getElementById(
+          "reasons"
+        ).innerText =
+          "> CONNECTION TO SENTINEL SERVER LOST.";
+
+        console.error(error);
+
+      }
+    }
+
+
+    async function loadHistory() {
+
+      try {
+
+        const response = await fetch(
+          `/api/v1/history/${hostname}?limit=30`
+        );
+
+        const data = await response.json();
+
+        const labels = data.history.map(
+          item =>
+            new Date(
+              item.timestamp
+            ).toLocaleTimeString()
+        );
+
+
+        cpuChart.data.labels = labels;
+
+        cpuChart.data.datasets[0].data =
+          data.history.map(
+            item =>
+              item.cpu_percent
+          );
+
+        cpuChart.update();
+
+
+        memoryChart.data.labels = labels;
+
+        memoryChart.data.datasets[0].data =
+          data.history.map(
+            item =>
+              item.memory_percent
+          );
+
+        memoryChart.update();
+
+
+        connectionsChart.data.labels = labels;
+
+        connectionsChart.data.datasets[0].data =
+          data.history.map(
+            item =>
+              item.active_connections
+          );
+
+        connectionsChart.update();
+
+      } catch (error) {
+
+        console.error(
+          "Erro ao carregar histórico:",
+          error
+        );
+
+      }
+    }
+
+
+    loadDashboard();
+    loadHistory();
+
+    setInterval(
+      loadDashboard,
+      5000
+    );
+
+    setInterval(
+      loadHistory,
+      5000
+    );
+
+  </script>
+
+</body>
+</html>

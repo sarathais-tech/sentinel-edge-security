@@ -63,5 +63,75 @@ def save_metrics(metrics):
         ),
     )
 
+def get_latest_metrics(hostname):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            hostname,
+            cpu_percent,
+            memory_percent,
+            bytes_sent,
+            bytes_received,
+            active_connections
+        FROM metrics
+        WHERE hostname = ?
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (hostname,),
+    )
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row is None:
+        return None
+
+    return {
+        "hostname": row[0],
+        "cpu_percent": row[1],
+        "memory_percent": row[2],
+        "bytes_sent": row[3],
+        "bytes_received": row[4],
+        "active_connections": row[5],
+    }
+def get_recent_metrics(hostname, limit=30):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            timestamp,
+            cpu_percent,
+            memory_percent,
+            active_connections
+        FROM metrics
+        WHERE hostname = ?
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (hostname, limit),
+    )
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    rows.reverse()
+
+    return [
+        {
+            "timestamp": row[0],
+            "cpu_percent": row[1],
+            "memory_percent": row[2],
+            "active_connections": row[3],
+        }
+        for row in rows
+    ]
     conn.commit()
     conn.close()
+
+    
