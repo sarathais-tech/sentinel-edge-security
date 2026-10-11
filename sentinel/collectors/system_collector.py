@@ -2,6 +2,7 @@ import psutil
 import socket 
 from sentinel.analysis.basic_analyzer import analyze_metrics
 from sentinel.storage.database import create_tables, save_metrics
+from sentinel.baseline.baseline_service import calculate_baseline
 
 
 
@@ -25,9 +26,11 @@ def collect_system_metrics():
 
 if __name__ == "__main__":
     data = collect_system_metrics()
-    
+
     create_tables()
     save_metrics(data)
+
+    baseline = calculate_baseline(data["hostname"])
 
     print("\nSENTINEL V0.1")
     print("------------------------")
@@ -37,7 +40,6 @@ if __name__ == "__main__":
     print(f"Bytes enviados: {data['bytes_sent']}")
     print(f"Bytes recebidos: {data['bytes_received']}")
     print(f"Conexões: {data['active_connections']}")
-
 
     analysis = analyze_metrics(data)
 
@@ -52,3 +54,10 @@ if analysis["reasons"]:
         print(f"- {reason}")
 else:
     print("Nenhuma anomalia básica detectada.")
+
+print("\nBASELINE")
+print("------------------------")
+print(f"Amostras: {baseline['samples']}")
+print(f"CPU média: {baseline['avg_cpu']}%")
+print(f"RAM média: {baseline['avg_memory']}%")
+print(f"Conexões médias: {baseline['avg_connections']}")
