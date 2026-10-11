@@ -1,9 +1,7 @@
 import psutil
-import socket 
-from sentinel.analysis.basic_analyzer import analyze_metrics
-from sentinel.analysis.baseline_analyzer import analyze_with_baseline
-from sentinel.agent.client import send_metrics
+import socket
 
+from sentinel.agent.client import send_metrics
 
 
 def collect_system_metrics():
@@ -26,54 +24,37 @@ def collect_system_metrics():
 
 if __name__ == "__main__":
     data = collect_system_metrics()
-    server_result = send_metrics(data)
 
-
-    baseline_analysis = analyze_with_baseline(data, baseline)
-
-    print("\nSENTINEL V0.1")
+    print("\nSENTINEL AGENT")
     print("------------------------")
     print(f"Host: {data['hostname']}")
     print(f"CPU: {data['cpu_percent']}%")
     print(f"RAM: {data['memory_percent']}%")
-    print(f"Bytes enviados: {data['bytes_sent']}")
-    print(f"Bytes recebidos: {data['bytes_received']}")
     print(f"Conexões: {data['active_connections']}")
 
-    analysis = analyze_metrics(data)
+    server_result = send_metrics(data)
 
-print("\nANÁLISE")
-print("------------------------")
-print(f"Status: {analysis['status']}")
-print(f"Risk Score: {analysis['risk_score']}%")
+    print("\nSENTINEL SERVER")
+    print("------------------------")
 
-if analysis["reasons"]:
-    print("Motivos:")
-    for reason in analysis["reasons"]:
-        print(f"- {reason}")
-else:
-    print("Nenhuma anomalia básica detectada.")
+    if server_result["success"]:
+        print("Métricas enviadas com sucesso.")
 
-print("\nDesvios:")
-print(f"CPU: {baseline_analysis['deviations']['cpu']}%")
-print(f"RAM: {baseline_analysis['deviations']['memory']}%")
-print(
-    f"Conexões: "
-    f"{baseline_analysis['deviations']['connections']}%"
-)
+        response = server_result["response"]
+        analysis = response["analysis"]
+        baseline = response["baseline"]
 
-if baseline_analysis["reasons"]:
-    print("\nMotivos:")
-    for reason in baseline_analysis["reasons"]:
-        print(f"- {reason}")
-else:
-    print("\nNenhum desvio relevante em relação ao baseline.")
+        print("\nANÁLISE DO SERVIDOR")
+        print("------------------------")
+        print(f"Status: {analysis['status']}")
+        print(f"Risk Score: {analysis['risk_score']}%")
+        print(f"Amostras do baseline: {baseline['samples']}")
 
-print("\nSENTINEL SERVER")
-print("------------------------")
+        if analysis["reasons"]:
+            print("\nMotivos:")
+            for reason in analysis["reasons"]:
+                print(f"- {reason}")
 
-if server_result["success"]:
-    print("Métricas enviadas com sucesso.")
-else:
-    print("Falha ao enviar métricas.")
-    print(server_result["error"])
+    else:
+        print("Falha ao enviar métricas.")
+        print(server_result["error"])
