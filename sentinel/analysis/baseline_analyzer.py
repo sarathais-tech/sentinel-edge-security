@@ -6,8 +6,24 @@ def calculate_deviation(current, average):
 
 
 def analyze_with_baseline(metrics, baseline):
+    if baseline["samples"] < 30:
+        return {
+        "risk_score": 0,
+        "status": "APRENDENDO",
+        "reasons": [
+            f"Baseline em treinamento: {baseline['samples']}/30 amostras"
+        ],
+        "deviations": {
+            "cpu": 0,
+            "memory": 0,
+            "connections": 0,
+        },
+    }
+
     risk_score = 0
     reasons = []
+
+    
 
     cpu_deviation = calculate_deviation(
         metrics["cpu_percent"],

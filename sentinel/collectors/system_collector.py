@@ -1,9 +1,8 @@
 import psutil
 import socket 
 from sentinel.analysis.basic_analyzer import analyze_metrics
-from sentinel.storage.database import create_tables, save_metrics
-from sentinel.baseline.baseline_service import calculate_baseline
 from sentinel.analysis.baseline_analyzer import analyze_with_baseline
+from sentinel.agent.client import send_metrics
 
 
 
@@ -27,11 +26,8 @@ def collect_system_metrics():
 
 if __name__ == "__main__":
     data = collect_system_metrics()
+    server_result = send_metrics(data)
 
-    create_tables()
-    save_metrics(data)
-
-    baseline = calculate_baseline(data["hostname"])
 
     baseline_analysis = analyze_with_baseline(data, baseline)
 
@@ -58,18 +54,6 @@ if analysis["reasons"]:
 else:
     print("Nenhuma anomalia básica detectada.")
 
-print("\nBASELINE")
-print("------------------------")
-print(f"Amostras: {baseline['samples']}")
-print(f"CPU média: {baseline['avg_cpu']}%")
-print(f"RAM média: {baseline['avg_memory']}%")
-print(f"Conexões médias: {baseline['avg_connections']}")
-
-print("\nANÁLISE BASEADA NO BASELINE")
-print("------------------------")
-print(f"Status: {baseline_analysis['status']}")
-print(f"Risk Score: {baseline_analysis['risk_score']}%")
-
 print("\nDesvios:")
 print(f"CPU: {baseline_analysis['deviations']['cpu']}%")
 print(f"RAM: {baseline_analysis['deviations']['memory']}%")
@@ -84,3 +68,12 @@ if baseline_analysis["reasons"]:
         print(f"- {reason}")
 else:
     print("\nNenhum desvio relevante em relação ao baseline.")
+
+print("\nSENTINEL SERVER")
+print("------------------------")
+
+if server_result["success"]:
+    print("Métricas enviadas com sucesso.")
+else:
+    print("Falha ao enviar métricas.")
+    print(server_result["error"])
