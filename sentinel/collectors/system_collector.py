@@ -3,6 +3,7 @@ import socket
 from sentinel.analysis.basic_analyzer import analyze_metrics
 from sentinel.storage.database import create_tables, save_metrics
 from sentinel.baseline.baseline_service import calculate_baseline
+from sentinel.analysis.baseline_analyzer import analyze_with_baseline
 
 
 
@@ -31,6 +32,8 @@ if __name__ == "__main__":
     save_metrics(data)
 
     baseline = calculate_baseline(data["hostname"])
+
+    baseline_analysis = analyze_with_baseline(data, baseline)
 
     print("\nSENTINEL V0.1")
     print("------------------------")
@@ -61,3 +64,23 @@ print(f"Amostras: {baseline['samples']}")
 print(f"CPU média: {baseline['avg_cpu']}%")
 print(f"RAM média: {baseline['avg_memory']}%")
 print(f"Conexões médias: {baseline['avg_connections']}")
+
+print("\nANÁLISE BASEADA NO BASELINE")
+print("------------------------")
+print(f"Status: {baseline_analysis['status']}")
+print(f"Risk Score: {baseline_analysis['risk_score']}%")
+
+print("\nDesvios:")
+print(f"CPU: {baseline_analysis['deviations']['cpu']}%")
+print(f"RAM: {baseline_analysis['deviations']['memory']}%")
+print(
+    f"Conexões: "
+    f"{baseline_analysis['deviations']['connections']}%"
+)
+
+if baseline_analysis["reasons"]:
+    print("\nMotivos:")
+    for reason in baseline_analysis["reasons"]:
+        print(f"- {reason}")
+else:
+    print("\nNenhum desvio relevante em relação ao baseline.")
