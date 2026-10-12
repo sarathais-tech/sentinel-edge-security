@@ -26,7 +26,6 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-
       background:
         repeating-linear-gradient(
           to bottom,
@@ -151,14 +150,16 @@
       color: #00ff88;
     }
 
-    .host-row {
+    .host-row,
+    .event-row {
       border-bottom: 1px dashed #006d3b;
       padding: 12px 0;
       line-height: 1.6;
       color: #baffd7;
     }
 
-    .host-name {
+    .host-name,
+    .event-type {
       color: #00ff88;
       font-weight: bold;
       font-size: 15px;
@@ -321,6 +322,18 @@
     <div class="panel">
 
       <div class="panel-title">
+        > SECURITY EVENTS
+      </div>
+
+      <div id="eventsList">
+        > Loading events...
+      </div>
+
+    </div>
+
+    <div class="panel">
+
+      <div class="panel-title">
         > LIVE TELEMETRY
       </div>
 
@@ -363,7 +376,6 @@
   </div>
 
   <script>
-
     const hostname = "Sasacatt";
 
     const chartOptions = {
@@ -480,9 +492,7 @@
 
 
     async function loadDashboard() {
-
       try {
-
         const response = await fetch(
           `/api/v1/dashboard/${hostname}`
         );
@@ -521,16 +531,12 @@
         ).innerText =
           data.metrics.connections;
 
-
         if (data.reasons.length === 0) {
-
           document.getElementById(
             "reasons"
           ).innerText =
             "> No anomalous behavior detected.";
-
         } else {
-
           document.getElementById(
             "reasons"
           ).innerHTML =
@@ -540,9 +546,7 @@
                   "> " + reason
               )
               .join("<br>");
-
         }
-
 
         document.getElementById(
           "baseline"
@@ -550,7 +554,6 @@
           `BASELINE SAMPLES: ${data.baseline.samples}`;
 
       } catch (error) {
-
         document.getElementById(
           "status"
         ).innerText =
@@ -562,118 +565,182 @@
           "> CONNECTION TO SENTINEL SERVER LOST.";
 
         console.error(error);
-
       }
     }
 
 
     async function loadHosts() {
+      try {
+        const response = await fetch(
+          "/api/v1/hosts"
+        );
 
-  try {
+        const data = await response.json();
 
-    const response = await fetch(
-      "/api/v1/hosts"
-    );
+        const container =
+          document.getElementById(
+            "hostsList"
+          );
 
-    const data = await response.json();
+        if (!data.hosts ||
+            data.hosts.length === 0) {
 
-    const container =
-      document.getElementById(
-        "hostsList"
-      );
+          container.innerHTML =
+            "> No hosts detected.";
 
-    if (!data.hosts ||
-        data.hosts.length === 0) {
+          return;
+        }
 
-      container.innerHTML =
-        "> No hosts detected.";
+        container.innerHTML =
+          data.hosts
+            .map(host => {
 
-      return;
+              const indicator =
+                host.connection_status === "ONLINE"
+                  ? "●"
+                  : "○";
+
+              const lastSeen =
+                new Date(
+                  host.last_seen
+                ).toLocaleTimeString();
+
+              return `
+                <div class="host-row">
+
+                  <div class="host-name">
+                    ${indicator}
+                    ${host.hostname}
+                  </div>
+
+                  NETWORK:
+                  ${host.connection_status}
+
+                  &nbsp; | &nbsp;
+
+                  SECURITY:
+                  ${host.status}
+
+                  &nbsp; | &nbsp;
+
+                  RISK:
+                  ${host.risk_score}%
+
+                  <br>
+
+                  CPU:
+                  ${host.cpu}%
+
+                  &nbsp; | &nbsp;
+
+                  RAM:
+                  ${host.memory}%
+
+                  &nbsp; | &nbsp;
+
+                  CONNECTIONS:
+                  ${host.connections}
+
+                  <br>
+
+                  LAST SEEN:
+                  ${lastSeen}
+
+                  &nbsp; | &nbsp;
+
+                  SAMPLES:
+                  ${host.samples}
+
+                </div>
+              `;
+            })
+            .join("");
+
+      } catch (error) {
+        document.getElementById(
+          "hostsList"
+        ).innerText =
+          "> Unable to load hosts.";
+
+        console.error(
+          "Erro ao carregar hosts:",
+          error
+        );
+      }
     }
 
-    container.innerHTML =
-      data.hosts
-        .map(host => {
 
-          const indicator =
-            host.connection_status === "ONLINE"
-              ? "●"
-              : "○";
+    async function loadEvents() {
+      try {
+        const response = await fetch(
+          "/api/v1/events?limit=20"
+        );
 
-          const lastSeen =
-            new Date(
-              host.last_seen
-            ).toLocaleTimeString();
+        const data = await response.json();
 
-          return `
-            <div class="host-row">
+        const container =
+          document.getElementById(
+            "eventsList"
+          );
 
-              <div class="host-name">
-                ${indicator}
-                ${host.hostname}
-              </div>
+        if (!data.events ||
+            data.events.length === 0) {
 
-              NETWORK:
-              ${host.connection_status}
+          container.innerHTML =
+            "> No events recorded.";
 
-              &nbsp; | &nbsp;
+          return;
+        }
 
-              SECURITY:
-              ${host.status}
+        container.innerHTML =
+          data.events
+            .map(event => {
 
-              &nbsp; | &nbsp;
+              const time =
+                new Date(
+                  event.timestamp
+                ).toLocaleTimeString();
 
-              RISK:
-              ${host.risk_score}%
+              return `
+                <div class="event-row">
 
-              <br>
+                  <div class="event-type">
+                    > ${event.event_type}
+                  </div>
 
-              CPU:
-              ${host.cpu}%
+                  HOST:
+                  ${event.hostname}
 
-              &nbsp; | &nbsp;
+                  &nbsp; | &nbsp;
 
-              RAM:
-              ${host.memory}%
+                  TIME:
+                  ${time}
 
-              &nbsp; | &nbsp;
+                  <br>
 
-              CONNECTIONS:
-              ${host.connections}
+                  ${event.message}
 
-              <br>
+                </div>
+              `;
+            })
+            .join("");
 
-              LAST SEEN:
-              ${lastSeen}
+      } catch (error) {
+        document.getElementById(
+          "eventsList"
+        ).innerText =
+          "> Unable to load events.";
 
-              &nbsp; | &nbsp;
+        console.error(
+          "Erro ao carregar eventos:",
+          error
+        );
+      }
+    }
 
-              SAMPLES:
-              ${host.samples}
-
-            </div>
-          `;
-        })
-        .join("");
-
-  } catch (error) {
-
-    document.getElementById(
-      "hostsList"
-    ).innerText =
-      "> Unable to load hosts.";
-
-    console.error(
-      "Erro ao carregar hosts:",
-      error
-    );
-  }
-}
 
     async function loadHistory() {
-
       try {
-
         const response = await fetch(
           `/api/v1/history/${hostname}?limit=30`
         );
@@ -688,7 +755,6 @@
               ).toLocaleTimeString()
           );
 
-
         cpuChart.data.labels =
           labels;
 
@@ -700,7 +766,6 @@
 
         cpuChart.update();
 
-
         memoryChart.data.labels =
           labels;
 
@@ -711,7 +776,6 @@
           );
 
         memoryChart.update();
-
 
         connectionsChart.data.labels =
           labels;
@@ -725,18 +789,17 @@
         connectionsChart.update();
 
       } catch (error) {
-
         console.error(
           "Erro ao carregar histórico:",
           error
         );
-
       }
     }
 
 
     loadDashboard();
     loadHosts();
+    loadEvents();
     loadHistory();
 
 
@@ -747,6 +810,11 @@
 
     setInterval(
       loadHosts,
+      5000
+    );
+
+    setInterval(
+      loadEvents,
       5000
     );
 
