@@ -9,7 +9,15 @@ DB_PATH = Path("data/sentinel.db")
 def get_connection():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(
+        DB_PATH,
+        timeout=10,
+    )
+
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout = 10000;")
+
+    return conn
 
 
 def create_tables():
@@ -27,6 +35,18 @@ def create_tables():
             bytes_sent INTEGER NOT NULL,
             bytes_received INTEGER NOT NULL,
             active_connections INTEGER NOT NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            hostname TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            message TEXT NOT NULL
         )
         """
     )
@@ -63,6 +83,10 @@ def save_metrics(metrics):
         ),
     )
 
+    conn.commit()
+    conn.close()
+
+
 def get_latest_metrics(hostname):
     conn = get_connection()
     cursor = conn.cursor()
@@ -98,6 +122,8 @@ def get_latest_metrics(hostname):
         "bytes_received": row[4],
         "active_connections": row[5],
     }
+
+
 def get_recent_metrics(hostname, limit=30):
     conn = get_connection()
     cursor = conn.cursor()
@@ -131,6 +157,8 @@ def get_recent_metrics(hostname, limit=30):
         }
         for row in rows
     ]
+
+
 def get_hosts():
     conn = get_connection()
     cursor = conn.cursor()
@@ -158,8 +186,92 @@ def get_hosts():
         }
         for row in rows
     ]
-    
+
+
+def save_event(hostname, event_type, message):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO events (
+            timestamp,
+            hostname,
+            event_type,
+            message
+        )
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            datetime.now().isoformat(),
+            hostname,
+            event_type,
+            message,
+        ),
+    )
+
     conn.commit()
     conn.close()
 
-    
+
+def get_last_event(hostname):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            timestamp,
+            event_type,
+            message
+        FROM events
+        WHERE hostname = ?
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (hostname,),
+    )
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if row is None:
+        return None
+
+    return {
+        "timestamp": row[0],
+        "event_type": row[1],
+        "message": row[2],
+    }
+
+
+def get_recent_events(limit=50):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            timestamp,
+            hostname,
+            event_type,
+            message
+        FROM events
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [
+        {
+            "timestamp": row[0],
+            "hostname": row[1],
+            "event_type": row[2],
+            "message": row[3],
+        }
+        for row in rows
+    ]

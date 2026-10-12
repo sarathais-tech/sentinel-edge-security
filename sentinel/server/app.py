@@ -1,22 +1,30 @@
+from datetime import datetime
+
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+
 from sentinel.storage.database import (
     create_tables,
     save_metrics,
     get_latest_metrics,
     get_recent_metrics,
     get_hosts,
+    save_event,
+    get_last_event,
+    get_recent_events,
 )
+
 from sentinel.baseline.baseline_service import calculate_baseline
 from sentinel.analysis.baseline_analyzer import analyze_with_baseline
-from fastapi.responses import FileResponse
-from datetime import datetime
 
 
 app = FastAPI(
     title="Sentinel Server",
     version="0.1.0",
 )
+
+create_tables()
 
 
 class MetricsPayload(BaseModel):
@@ -47,18 +55,32 @@ def health():
 
 @app.post("/api/v1/metrics")
 def receive_metrics(metrics: MetricsPayload):
-    create_tables()
-
     data = metrics.model_dump()
 
     save_metrics(data)
 
-    baseline = calculate_baseline(metrics.hostname)
+    baseline = calculate_baseline(
+        metrics.hostname
+    )
 
     analysis = analyze_with_baseline(
         data,
         baseline,
     )
+
+    last_event = get_last_event(
+        metrics.hostname
+    )
+
+    if (
+        last_event is None
+        or last_event["event_type"] == "OFFLINE"
+    ):
+        save_event(
+            metrics.hostname,
+            "ONLINE",
+            "Host enviou telemetria e está online",
+        )
 
     return {
         "received": True,
@@ -67,25 +89,37 @@ def receive_metrics(metrics: MetricsPayload):
             "samples": baseline["samples"],
             "avg_cpu": baseline["avg_cpu"],
             "avg_memory": baseline["avg_memory"],
-            "avg_connections": baseline["avg_connections"],
+            "avg_connections": baseline[
+                "avg_connections"
+            ],
         },
         "analysis": {
             "status": analysis["status"],
-            "risk_score": analysis["risk_score"],
+            "risk_score": analysis[
+                "risk_score"
+            ],
             "reasons": analysis["reasons"],
-            "deviations": analysis["deviations"],
+            "deviations": analysis[
+                "deviations"
+            ],
         },
     }
+
+
 @app.get("/api/v1/dashboard/{hostname}")
 def get_dashboard(hostname: str):
-    latest = get_latest_metrics(hostname)
+    latest = get_latest_metrics(
+        hostname
+    )
 
     if latest is None:
         return {
             "error": "Host não encontrado"
         }
 
-    baseline = calculate_baseline(hostname)
+    baseline = calculate_baseline(
+        hostname
+    )
 
     analysis = analyze_with_baseline(
         latest,
@@ -95,29 +129,45 @@ def get_dashboard(hostname: str):
     return {
         "hostname": hostname,
         "status": analysis["status"],
-        "risk_score": analysis["risk_score"],
+        "risk_score": analysis[
+            "risk_score"
+        ],
         "metrics": {
-            "cpu": latest["cpu_percent"],
-            "memory": latest["memory_percent"],
-            "connections": latest["active_connections"],
+            "cpu": latest[
+                "cpu_percent"
+            ],
+            "memory": latest[
+                "memory_percent"
+            ],
+            "connections": latest[
+                "active_connections"
+            ],
         },
         "baseline": {
-            "samples": baseline["samples"],
-            "avg_cpu": baseline["avg_cpu"],
-            "avg_memory": baseline["avg_memory"],
-            "avg_connections": baseline["avg_connections"],
+            "samples": baseline[
+                "samples"
+            ],
+            "avg_cpu": baseline[
+                "avg_cpu"
+            ],
+            "avg_memory": baseline[
+                "avg_memory"
+            ],
+            "avg_connections": baseline[
+                "avg_connections"
+            ],
         },
-        "reasons": analysis["reasons"],
+        "reasons": analysis[
+            "reasons"
+        ],
     }
 
-@app.get("/dashboard")
-def dashboard_page():
-    return FileResponse(
-        "sentinel/ui/dashboard.html"
-    )
 
 @app.get("/api/v1/history/{hostname}")
-def get_history(hostname: str, limit: int = 30):
+def get_history(
+    hostname: str,
+    limit: int = 30,
+):
     return {
         "hostname": hostname,
         "history": get_recent_metrics(
@@ -125,6 +175,7 @@ def get_history(hostname: str, limit: int = 30):
             limit,
         ),
     }
+
 
 @app.get("/api/v1/hosts")
 def list_hosts():
@@ -160,16 +211,48 @@ def list_hosts():
             else "OFFLINE"
         )
 
+        last_event = get_last_event(
+            host["hostname"]
+        )
+
+        if connection_status == "OFFLINE":
+            if (
+                last_event is None
+                or last_event[
+                    "event_type"
+                ] != "OFFLINE"
+            ):
+                save_event(
+                    host["hostname"],
+                    "OFFLINE",
+                    "Host parou de enviar telemetria",
+                )
+
         result.append(
             {
-                "hostname": host["hostname"],
-                "samples": host["samples"],
-                "connection_status": connection_status,
-                "last_seen": host["last_seen"],
-                "status": analysis["status"],
-                "risk_score": analysis["risk_score"],
-                "cpu": latest["cpu_percent"],
-                "memory": latest["memory_percent"],
+                "hostname": host[
+                    "hostname"
+                ],
+                "samples": host[
+                    "samples"
+                ],
+                "connection_status":
+                    connection_status,
+                "last_seen": host[
+                    "last_seen"
+                ],
+                "status": analysis[
+                    "status"
+                ],
+                "risk_score": analysis[
+                    "risk_score"
+                ],
+                "cpu": latest[
+                    "cpu_percent"
+                ],
+                "memory": latest[
+                    "memory_percent"
+                ],
                 "connections": latest[
                     "active_connections"
                 ],
@@ -179,3 +262,21 @@ def list_hosts():
     return {
         "hosts": result
     }
+
+
+@app.get("/api/v1/events")
+def list_events(
+    limit: int = 50,
+):
+    return {
+        "events": get_recent_events(
+            limit
+        )
+    }
+
+
+@app.get("/dashboard")
+def dashboard_page():
+    return FileResponse(
+        "sentinel/ui/dashboard.html"
+    )
