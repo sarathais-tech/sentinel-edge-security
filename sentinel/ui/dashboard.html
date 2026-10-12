@@ -569,87 +569,106 @@
 
     async function loadHosts() {
 
-      try {
+  try {
 
-        const response = await fetch(
-          "/api/v1/hosts"
-        );
+    const response = await fetch(
+      "/api/v1/hosts"
+    );
 
-        const data = await response.json();
+    const data = await response.json();
 
-        const container =
-          document.getElementById(
-            "hostsList"
-          );
+    const container =
+      document.getElementById(
+        "hostsList"
+      );
 
-        if (!data.hosts ||
-            data.hosts.length === 0) {
+    if (!data.hosts ||
+        data.hosts.length === 0) {
 
-          container.innerHTML =
-            "> No hosts detected.";
+      container.innerHTML =
+        "> No hosts detected.";
 
-          return;
-        }
-
-
-        container.innerHTML =
-          data.hosts
-            .map(
-              host => `
-                <div class="host-row">
-
-                  <div class="host-name">
-                    > ${host.hostname}
-                  </div>
-
-                  STATUS:
-                  ${host.status}
-
-                  &nbsp; | &nbsp;
-
-                  RISK:
-                  ${host.risk_score}%
-
-                  <br>
-
-                  CPU:
-                  ${host.cpu}%
-
-                  &nbsp; | &nbsp;
-
-                  RAM:
-                  ${host.memory}%
-
-                  &nbsp; | &nbsp;
-
-                  CONNECTIONS:
-                  ${host.connections}
-
-                  <br>
-
-                  SAMPLES:
-                  ${host.samples}
-
-                </div>
-              `
-            )
-            .join("");
-
-      } catch (error) {
-
-        document.getElementById(
-          "hostsList"
-        ).innerText =
-          "> Unable to load hosts.";
-
-        console.error(
-          "Erro ao carregar hosts:",
-          error
-        );
-
-      }
+      return;
     }
 
+    container.innerHTML =
+      data.hosts
+        .map(host => {
+
+          const indicator =
+            host.connection_status === "ONLINE"
+              ? "●"
+              : "○";
+
+          const lastSeen =
+            new Date(
+              host.last_seen
+            ).toLocaleTimeString();
+
+          return `
+            <div class="host-row">
+
+              <div class="host-name">
+                ${indicator}
+                ${host.hostname}
+              </div>
+
+              NETWORK:
+              ${host.connection_status}
+
+              &nbsp; | &nbsp;
+
+              SECURITY:
+              ${host.status}
+
+              &nbsp; | &nbsp;
+
+              RISK:
+              ${host.risk_score}%
+
+              <br>
+
+              CPU:
+              ${host.cpu}%
+
+              &nbsp; | &nbsp;
+
+              RAM:
+              ${host.memory}%
+
+              &nbsp; | &nbsp;
+
+              CONNECTIONS:
+              ${host.connections}
+
+              <br>
+
+              LAST SEEN:
+              ${lastSeen}
+
+              &nbsp; | &nbsp;
+
+              SAMPLES:
+              ${host.samples}
+
+            </div>
+          `;
+        })
+        .join("");
+
+  } catch (error) {
+
+    document.getElementById(
+      "hostsList"
+    ).innerText =
+      "> Unable to load hosts.";
+
+    console.error(
+      "Erro ao carregar hosts:",
+      error
+    );
+  }
+}
 
     async function loadHistory() {
 

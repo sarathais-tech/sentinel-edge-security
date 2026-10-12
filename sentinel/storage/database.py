@@ -139,8 +139,8 @@ def get_hosts():
         """
         SELECT
             hostname,
-            COUNT(*) as samples,
-            MAX(id) as last_id
+            COUNT(*) AS samples,
+            MAX(timestamp) AS last_seen
         FROM metrics
         GROUP BY hostname
         ORDER BY hostname
@@ -154,10 +154,11 @@ def get_hosts():
         {
             "hostname": row[0],
             "samples": row[1],
-            "last_id": row[2],
+            "last_seen": row[2],
         }
         for row in rows
     ]
+    
     conn.commit()
     conn.close()
 

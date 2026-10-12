@@ -10,6 +10,7 @@ from sentinel.storage.database import (
 from sentinel.baseline.baseline_service import calculate_baseline
 from sentinel.analysis.baseline_analyzer import analyze_with_baseline
 from fastapi.responses import FileResponse
+from datetime import datetime
 
 
 app = FastAPI(
@@ -132,23 +133,46 @@ def list_hosts():
     result = []
 
     for host in hosts:
-        latest = get_latest_metrics(host["hostname"])
-        baseline = calculate_baseline(host["hostname"])
+        latest = get_latest_metrics(
+            host["hostname"]
+        )
+
+        baseline = calculate_baseline(
+            host["hostname"]
+        )
 
         analysis = analyze_with_baseline(
             latest,
             baseline,
         )
 
+        last_seen = datetime.fromisoformat(
+            host["last_seen"]
+        )
+
+        seconds_since_last_seen = (
+            datetime.now() - last_seen
+        ).total_seconds()
+
+        connection_status = (
+            "ONLINE"
+            if seconds_since_last_seen <= 120
+            else "OFFLINE"
+        )
+
         result.append(
             {
                 "hostname": host["hostname"],
                 "samples": host["samples"],
+                "connection_status": connection_status,
+                "last_seen": host["last_seen"],
                 "status": analysis["status"],
                 "risk_score": analysis["risk_score"],
                 "cpu": latest["cpu_percent"],
                 "memory": latest["memory_percent"],
-                "connections": latest["active_connections"],
+                "connections": latest[
+                    "active_connections"
+                ],
             }
         )
 
