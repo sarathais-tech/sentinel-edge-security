@@ -94,7 +94,49 @@
         .host-title {
             font-size: 26px;
             color: #d2ffe8;
-            margin-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .status-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border: 1px solid currentColor;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .status-online,
+        .status-normal {
+            color: #00ff88;
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.7);
+        }
+
+        .status-offline,
+        .status-critical {
+            color: #ff3b3b;
+            text-shadow: 0 0 8px rgba(255, 59, 59, 0.7);
+        }
+
+        .status-warning {
+            color: #ffd84d;
+            text-shadow: 0 0 8px rgba(255, 216, 77, 0.5);
+        }
+
+        .status-suspicious {
+            color: #ff8c42;
+            text-shadow: 0 0 8px rgba(255, 140, 66, 0.5);
+        }
+
+        .status-learning {
+            color: #00d9ff;
+            text-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
         }
 
         .grid {
@@ -133,17 +175,18 @@
             border: 1px solid #00ff88;
             height: 14px;
             margin-top: 10px;
+            overflow: hidden;
         }
 
         .risk-fill {
             width: 0%;
             height: 100%;
             background: #00ff88;
-
-            box-shadow:
-                0 0 10px #00ff88;
-
-            transition: width 0.4s;
+            box-shadow: 0 0 10px #00ff88;
+            transition:
+                width 0.4s,
+                background 0.4s,
+                box-shadow 0.4s;
         }
 
         .row {
@@ -155,9 +198,34 @@
             line-height: 1.6;
         }
 
+        .event-row {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 3px solid #006d3b;
+            background: rgba(0, 255, 136, 0.025);
+        }
+
+        .event-online {
+            border-left-color: #00ff88;
+        }
+
+        .event-offline,
+        .event-risk-high {
+            border-left-color: #ff3b3b;
+        }
+
+        .event-anomaly {
+            border-left-color: #ff8c42;
+        }
+
+        .event-normalized {
+            border-left-color: #00d9ff;
+        }
+
         .event-type {
             font-weight: bold;
             color: #00ff88;
+            margin-bottom: 4px;
         }
 
         .chart-wrapper {
@@ -211,10 +279,8 @@
 
         <div class="topbar">
 
-            <div>
-                <div class="logo">
-                    SENTINEL // HOST INTELLIGENCE
-                </div>
+            <div class="logo">
+                SENTINEL // HOST INTELLIGENCE
             </div>
 
             <a class="back" href="/dashboard">
@@ -233,18 +299,22 @@
                 LOADING...
             </div>
 
-            <div>
-                NETWORK:
-                <strong id="networkStatus">
-                    --
-                </strong>
+            <div class="status-line">
 
-                &nbsp; | &nbsp;
+                <span>
+                    NETWORK:
+                    <span class="status-badge" id="networkStatus">
+                        --
+                    </span>
+                </span>
 
-                SECURITY:
-                <strong id="securityStatus">
-                    --
-                </strong>
+                <span>
+                    SECURITY:
+                    <span class="status-badge" id="securityStatus">
+                        --
+                    </span>
+                </span>
+
             </div>
 
         </div>
@@ -524,6 +594,137 @@
         );
 
 
+        function setNetworkStatus(status) {
+            const element =
+                document.getElementById(
+                    "networkStatus"
+                );
+
+            element.innerText = status;
+
+            element.className =
+                "status-badge";
+
+            if (status === "ONLINE") {
+                element.classList.add(
+                    "status-online"
+                );
+            } else {
+                element.classList.add(
+                    "status-offline"
+                );
+            }
+        }
+
+
+        function setSecurityStatus(status) {
+            const element =
+                document.getElementById(
+                    "securityStatus"
+                );
+
+            element.innerText = status;
+
+            element.className =
+                "status-badge";
+
+            if (status === "NORMAL") {
+                element.classList.add(
+                    "status-normal"
+                );
+            } else if (
+                status === "ATENÇÃO"
+            ) {
+                element.classList.add(
+                    "status-warning"
+                );
+            } else if (
+                status === "SUSPEITO"
+            ) {
+                element.classList.add(
+                    "status-suspicious"
+                );
+            } else if (
+                status === "CRÍTICO"
+            ) {
+                element.classList.add(
+                    "status-critical"
+                );
+            } else {
+                element.classList.add(
+                    "status-learning"
+                );
+            }
+        }
+
+
+        function setRiskColor(score) {
+            const bar =
+                document.getElementById(
+                    "riskFill"
+                );
+
+            if (score < 30) {
+                bar.style.background =
+                    "#00ff88";
+
+                bar.style.boxShadow =
+                    "0 0 10px #00ff88";
+            } else if (score < 60) {
+                bar.style.background =
+                    "#ffd84d";
+
+                bar.style.boxShadow =
+                    "0 0 10px #ffd84d";
+            } else {
+                bar.style.background =
+                    "#ff3b3b";
+
+                bar.style.boxShadow =
+                    "0 0 10px #ff3b3b";
+            }
+        }
+
+
+        function getEventClass(
+            eventType
+        ) {
+            if (
+                eventType === "ONLINE"
+            ) {
+                return "event-online";
+            }
+
+            if (
+                eventType === "OFFLINE"
+            ) {
+                return "event-offline";
+            }
+
+            if (
+                eventType === "RISK_HIGH"
+            ) {
+                return "event-risk-high";
+            }
+
+            if (
+                eventType ===
+                "ANOMALY_DETECTED"
+            ) {
+                return "event-anomaly";
+            }
+
+            if (
+                eventType ===
+                "RISK_NORMALIZED"
+            ) {
+                return "event-normalized";
+            }
+
+            return "";
+        }
+
+
         async function loadHost() {
             const response =
                 await fetch(
@@ -540,16 +741,14 @@
                 data.hostname;
 
 
-            document.getElementById(
-                "networkStatus"
-            ).innerText =
-                data.connection_status;
+            setNetworkStatus(
+                data.connection_status
+            );
 
 
-            document.getElementById(
-                "securityStatus"
-            ).innerText =
-                data.security_status;
+            setSecurityStatus(
+                data.security_status
+            );
 
 
             document.getElementById(
@@ -562,6 +761,11 @@
                 "riskFill"
             ).style.width =
                 data.risk_score + "%";
+
+
+            setRiskColor(
+                data.risk_score
+            );
 
 
             document.getElementById(
@@ -690,8 +894,14 @@
                                         event.timestamp
                                     ).toLocaleString();
 
+                                const eventClass =
+                                    getEventClass(
+                                        event.event_type
+                                    );
+
                                 return `
-                  <div class="row">
+                  <div
+                    class="event-row ${eventClass}">
 
                     <div
                       class="event-type">
