@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sentinel Host Intelligence</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #020403;
+            color: #00ff88;
+            font-family:
+                "Courier New",
+                Consolas,
+                monospace;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+
+            background:
+                repeating-linear-gradient(to bottom,
+                    rgba(0, 255, 136, 0.025),
+                    rgba(0, 255, 136, 0.025) 1px,
+                    transparent 1px,
+                    transparent 4px);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 28px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            border-bottom: 1px solid #00ff88;
+            padding-bottom: 16px;
+            margin-bottom: 22px;
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 5px;
+
+            text-shadow:
+                0 0 12px rgba(0, 255, 136, 0.7);
+        }
+
+        .back {
+            color: #00ff88;
+            text-decoration: none;
+            border: 1px solid #006d3b;
+            padding: 8px 12px;
+        }
+
+        .back:hover {
+            background:
+                rgba(0, 255, 136, 0.08);
+        }
+
+        .panel {
+            border: 1px solid #006d3b;
+            padding: 20px;
+            margin-bottom: 18px;
+
+            background:
+                rgba(0, 255, 136, 0.018);
+        }
+
+        .panel-title {
+            letter-spacing: 3px;
+            margin-bottom: 16px;
+        }
+
+        .host-title {
+            font-size: 26px;
+            color: #d2ffe8;
+            margin-bottom: 6px;
+        }
+
+        .grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .card {
+            border: 1px solid #006d3b;
+            padding: 18px;
+        }
+
+        .label {
+            font-size: 11px;
+            color: #00b863;
+            letter-spacing: 2px;
+        }
+
+        .value {
+            margin-top: 7px;
+            font-size: 24px;
+            color: #d2ffe8;
+        }
+
+        .risk {
+            font-size: 42px;
+            color: #d2ffe8;
+        }
+
+        .risk-bar {
+            border: 1px solid #00ff88;
+            height: 14px;
+            margin-top: 10px;
+        }
+
+        .risk-fill {
+            width: 0%;
+            height: 100%;
+            background: #00ff88;
+
+            box-shadow:
+                0 0 10px #00ff88;
+
+            transition: width 0.4s;
+        }
+
+        .row {
+            padding: 10px 0;
+
+            border-bottom:
+                1px dashed #006d3b;
+
+            line-height: 1.6;
+        }
+
+        .event-type {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .chart-wrapper {
+            height: 260px;
+        }
+
+        .reason {
+            line-height: 1.7;
+            color: #baffd7;
+        }
+
+        .baseline-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 14px;
+        }
+
+        .deviation {
+            color: #baffd7;
+            font-size: 14px;
+        }
+
+        .footer {
+            font-size: 11px;
+            color: #006d3b;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 700px) {
+
+            .grid,
+            .baseline-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                gap: 12px;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="topbar">
+
+            <div>
+                <div class="logo">
+                    SENTINEL // HOST INTELLIGENCE
+                </div>
+            </div>
+
+            <a class="back" href="/dashboard">
+                ← DASHBOARD
+            </a>
+
+        </div>
+
+        <div class="panel">
+
+            <div class="label">
+                // HOST
+            </div>
+
+            <div class="host-title" id="hostname">
+                LOADING...
+            </div>
+
+            <div>
+                NETWORK:
+                <strong id="networkStatus">
+                    --
+                </strong>
+
+                &nbsp; | &nbsp;
+
+                SECURITY:
+                <strong id="securityStatus">
+                    --
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                > RISK ANALYSIS
+            </div>
+
+            <div class="risk">
+                <span id="risk">
+                    0
+                </span>%
+            </div>
+
+            <div class="risk-bar">
+                <div class="risk-fill" id="riskFill">
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="grid">
+
+            <div class="card">
+                <div class="label">
+                    // CPU LOAD
+                </div>
+
+                <div class="value" id="cpu">
+                    --
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">
+                    // MEMORY
+                </div>
+
+                <div class="value" id="memory">
+                    --
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">
+                    // CONNECTIONS
+                </div>
+
+                <div class="value" id="connections">
+                    --
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                > BASELINE INTELLIGENCE
+            </div>
+
+            <div class="baseline-grid">
+
+                <div class="card">
+                    <div class="label">
+                        AVG CPU
+                    </div>
+
+                    <div class="value" id="avgCpu">
+                        --
+                    </div>
+
+                    <div class="deviation" id="cpuDeviation">
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="label">
+                        AVG MEMORY
+                    </div>
+
+                    <div class="value" id="avgMemory">
+                        --
+                    </div>
+
+                    <div class="deviation" id="memoryDeviation">
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div class="label">
+                        AVG CONNECTIONS
+                    </div>
+
+                    <div class="value" id="avgConnections">
+                        --
+                    </div>
+
+                    <div class="deviation" id="connectionsDeviation">
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="margin-top: 16px;" id="samples">
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                > ANALYSIS EXPLANATION
+            </div>
+
+            <div class="reason" id="reasons">
+                Waiting...
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                > TELEMETRY HISTORY
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="telemetryChart"></canvas>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                > HOST SECURITY EVENTS
+            </div>
+
+            <div id="events">
+                Loading...
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                > NODE INFORMATION
+            </div>
+
+            <div class="row">
+                LAST SEEN:
+                <span id="lastSeen">
+                    --
+                </span>
+            </div>
+
+            <div class="row">
+                BYTES SENT:
+                <span id="bytesSent">
+                    --
+                </span>
+            </div>
+
+            <div class="row">
+                BYTES RECEIVED:
+                <span id="bytesReceived">
+                    --
+                </span>
+            </div>
+
+        </div>
+
+
+        <div class="footer">
+            SENTINEL EDGE SECURITY INTELLIGENCE //
+            HOST DETAIL VIEW
+        </div>
+
+    </div>
+
+
+    <script>
+        const hostname =
+            decodeURIComponent(
+                window.location.pathname
+                    .split("/")
+                    .pop()
+            );
+
+
+        const chart = new Chart(
+            document.getElementById(
+                "telemetryChart"
+            ),
+            {
+                type: "line",
+
+                data: {
+                    labels: [],
+
+                    datasets: [
+                        {
+                            label: "CPU %",
+                            data: [],
+                            borderColor: "#00ff88",
+                            tension: 0.25,
+                            pointRadius: 1
+                        },
+                        {
+                            label: "MEMORY %",
+                            data: [],
+                            borderColor: "#74ffb6",
+                            tension: 0.25,
+                            pointRadius: 1
+                        },
+                        {
+                            label: "CONNECTIONS",
+                            data: [],
+                            borderColor: "#00b863",
+                            tension: 0.25,
+                            pointRadius: 1
+                        }
+                    ]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#00ff88"
+                            }
+                        }
+                    },
+
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: "#006d3b"
+                            },
+
+                            grid: {
+                                color:
+                                    "rgba(0,255,136,0.08)"
+                            }
+                        },
+
+                        y: {
+                            ticks: {
+                                color: "#00b863"
+                            },
+
+                            grid: {
+                                color:
+                                    "rgba(0,255,136,0.08)"
+                            }
+                        }
+                    }
+                }
+            }
+        );
+
+
+        async function loadHost() {
+            const response =
+                await fetch(
+                    `/api/v1/host/${hostname}`
+                );
+
+            const data =
+                await response.json();
+
+
+            document.getElementById(
+                "hostname"
+            ).innerText =
+                data.hostname;
+
+
+            document.getElementById(
+                "networkStatus"
+            ).innerText =
+                data.connection_status;
+
+
+            document.getElementById(
+                "securityStatus"
+            ).innerText =
+                data.security_status;
+
+
+            document.getElementById(
+                "risk"
+            ).innerText =
+                data.risk_score;
+
+
+            document.getElementById(
+                "riskFill"
+            ).style.width =
+                data.risk_score + "%";
+
+
+            document.getElementById(
+                "cpu"
+            ).innerText =
+                data.metrics.cpu + "%";
+
+
+            document.getElementById(
+                "memory"
+            ).innerText =
+                data.metrics.memory + "%";
+
+
+            document.getElementById(
+                "connections"
+            ).innerText =
+                data.metrics.connections;
+
+
+            document.getElementById(
+                "avgCpu"
+            ).innerText =
+                data.baseline.avg_cpu + "%";
+
+
+            document.getElementById(
+                "avgMemory"
+            ).innerText =
+                data.baseline.avg_memory + "%";
+
+
+            document.getElementById(
+                "avgConnections"
+            ).innerText =
+                data.baseline.avg_connections;
+
+
+            document.getElementById(
+                "cpuDeviation"
+            ).innerText =
+                `Deviation: ${data.deviations.cpu}%`;
+
+
+            document.getElementById(
+                "memoryDeviation"
+            ).innerText =
+                `Deviation: ${data.deviations.memory}%`;
+
+
+            document.getElementById(
+                "connectionsDeviation"
+            ).innerText =
+                `Deviation: ${data.deviations.connections}%`;
+
+
+            document.getElementById(
+                "samples"
+            ).innerText =
+                `BASELINE SAMPLES: ${data.baseline.samples}`;
+
+
+            if (
+                !data.reasons ||
+                data.reasons.length === 0
+            ) {
+                document.getElementById(
+                    "reasons"
+                ).innerText =
+                    "> No anomalous behavior detected.";
+            } else {
+                document.getElementById(
+                    "reasons"
+                ).innerHTML =
+                    data.reasons
+                        .map(
+                            reason =>
+                                `> ${reason}`
+                        )
+                        .join("<br>");
+            }
+
+
+            document.getElementById(
+                "lastSeen"
+            ).innerText =
+                data.last_seen
+                    ? new Date(
+                        data.last_seen
+                    ).toLocaleString()
+                    : "--";
+
+
+            document.getElementById(
+                "bytesSent"
+            ).innerText =
+                data.metrics.bytes_sent;
+
+
+            document.getElementById(
+                "bytesReceived"
+            ).innerText =
+                data.metrics.bytes_received;
+
+
+            const eventsContainer =
+                document.getElementById(
+                    "events"
+                );
+
+
+            if (
+                !data.events ||
+                data.events.length === 0
+            ) {
+                eventsContainer.innerText =
+                    "> No events recorded.";
+            } else {
+                eventsContainer.innerHTML =
+                    data.events
+                        .map(
+                            event => {
+
+                                const time =
+                                    new Date(
+                                        event.timestamp
+                                    ).toLocaleString();
+
+                                return `
+                  <div class="row">
+
+                    <div
+                      class="event-type">
+                      > ${event.event_type}
+                    </div>
+
+                    ${time}
+
+                    <br>
+
+                    ${event.message}
+
+                  </div>
+                `;
+                            }
+                        )
+                        .join("");
+            }
+        }
+
+
+        async function loadHistory() {
+            const response =
+                await fetch(
+                    `/api/v1/history/${hostname}?limit=40`
+                );
+
+            const data =
+                await response.json();
+
+
+            chart.data.labels =
+                data.history.map(
+                    item =>
+                        new Date(
+                            item.timestamp
+                        ).toLocaleTimeString()
+                );
+
+
+            chart.data.datasets[0].data =
+                data.history.map(
+                    item =>
+                        item.cpu_percent
+                );
+
+
+            chart.data.datasets[1].data =
+                data.history.map(
+                    item =>
+                        item.memory_percent
+                );
+
+
+            chart.data.datasets[2].data =
+                data.history.map(
+                    item =>
+                        item.active_connections
+                );
+
+
+            chart.update();
+        }
+
+
+        loadHost();
+        loadHistory();
+
+
+        setInterval(
+            loadHost,
+            5000
+        );
+
+
+        setInterval(
+            loadHistory,
+            5000
+        );
+    </script>
+
+</body>
+
+</html>

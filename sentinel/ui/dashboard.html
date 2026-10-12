@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Sentinel Security Console</title>
+  <title>
+    Sentinel Security Console
+  </title>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">
+  </script>
 
   <style>
     * {
@@ -17,7 +23,12 @@
       margin: 0;
       background: #020403;
       color: #00ff88;
-      font-family: "Courier New", Consolas, monospace;
+
+      font-family:
+        "Courier New",
+        Consolas,
+        monospace;
+
       min-height: 100vh;
     }
 
@@ -26,14 +37,13 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
+
       background:
-        repeating-linear-gradient(
-          to bottom,
+        repeating-linear-gradient(to bottom,
           rgba(0, 255, 136, 0.025),
           rgba(0, 255, 136, 0.025) 1px,
           transparent 1px,
-          transparent 4px
-        );
+          transparent 4px);
     }
 
     .container {
@@ -43,7 +53,9 @@
     }
 
     .header {
-      border-bottom: 1px solid #00ff88;
+      border-bottom:
+        1px solid #00ff88;
+
       padding-bottom: 15px;
       margin-bottom: 22px;
     }
@@ -51,8 +63,11 @@
     .logo {
       font-size: 32px;
       font-weight: bold;
+
       letter-spacing: 7px;
-      text-shadow: 0 0 12px rgba(0, 255, 136, 0.75);
+
+      text-shadow:
+        0 0 12px rgba(0, 255, 136, 0.75);
     }
 
     .subtitle {
@@ -70,10 +85,12 @@
 
     .status-card {
       border: 1px solid #00ff88;
+
       padding: 22px;
       margin-bottom: 18px;
-      background: rgba(0, 255, 136, 0.025);
-      box-shadow: inset 0 0 20px rgba(0, 255, 136, 0.04);
+
+      background:
+        rgba(0, 255, 136, 0.025);
     }
 
     .label {
@@ -91,7 +108,6 @@
     .status {
       font-size: 28px;
       font-weight: bold;
-      text-shadow: 0 0 8px rgba(0, 255, 136, 0.8);
     }
 
     .risk-container {
@@ -107,28 +123,44 @@
       height: 14px;
       border: 1px solid #00ff88;
       margin-top: 8px;
-      overflow: hidden;
     }
 
     .risk-fill {
       height: 100%;
       width: 0%;
       background: #00ff88;
-      transition: width 0.4s ease;
-      box-shadow: 0 0 10px #00ff88;
+
+      box-shadow:
+        0 0 10px #00ff88;
+
+      transition: width 0.4s;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+
+      grid-template-columns:
+        repeat(3, 1fr);
+
       gap: 14px;
       margin-bottom: 18px;
     }
 
-    .card {
+    .card,
+    .panel {
       border: 1px solid #006d3b;
+
+      background:
+        rgba(0, 255, 136, 0.018);
+    }
+
+    .card {
       padding: 18px;
-      background: rgba(0, 255, 136, 0.018);
+    }
+
+    .panel {
+      padding: 20px;
+      margin-bottom: 18px;
     }
 
     .value {
@@ -137,32 +169,40 @@
       color: #d2ffe8;
     }
 
-    .panel {
-      border: 1px solid #006d3b;
-      padding: 20px;
-      background: rgba(0, 255, 136, 0.018);
-      margin-bottom: 18px;
-    }
-
     .panel-title {
       letter-spacing: 3px;
       margin-bottom: 15px;
-      color: #00ff88;
     }
 
     .host-row,
     .event-row {
-      border-bottom: 1px dashed #006d3b;
+      border-bottom:
+        1px dashed #006d3b;
+
       padding: 12px 0;
+
       line-height: 1.6;
-      color: #baffd7;
     }
 
-    .host-name,
+    .host-link {
+      color: #00ff88;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .host-link:hover {
+      text-shadow:
+        0 0 10px #00ff88;
+    }
+
     .event-type {
       color: #00ff88;
       font-weight: bold;
-      font-size: 15px;
+    }
+
+    .chart-wrapper {
+      height: 220px;
+      margin-bottom: 22px;
     }
 
     #reasons {
@@ -171,20 +211,17 @@
     }
 
     .baseline {
-      border-top: 1px dashed #006d3b;
       margin-top: 18px;
       padding-top: 12px;
+
+      border-top:
+        1px dashed #006d3b;
+
       color: #00b863;
       font-size: 12px;
     }
 
-    .chart-wrapper {
-      height: 220px;
-      margin-bottom: 22px;
-    }
-
     .footer {
-      margin-top: 20px;
       font-size: 11px;
       color: #006d3b;
     }
@@ -194,9 +231,9 @@
       width: 9px;
       height: 15px;
       background: #00ff88;
-      margin-left: 5px;
-      animation: blink 1s steps(1) infinite;
-      vertical-align: middle;
+
+      animation:
+        blink 1s steps(1) infinite;
     }
 
     @keyframes blink {
@@ -209,12 +246,9 @@
       .grid {
         grid-template-columns: 1fr;
       }
-
-      .container {
-        padding: 16px;
-      }
     }
   </style>
+
 </head>
 
 <body>
@@ -222,8 +256,10 @@
   <div class="container">
 
     <div class="header">
+
       <div class="logo">
-        SENTINEL<span class="cursor"></span>
+        SENTINEL
+        <span class="cursor"></span>
       </div>
 
       <div class="subtitle">
@@ -231,9 +267,12 @@
       </div>
 
       <div class="system-line">
-        [ SYSTEM NODE ACTIVE ] [ MONITORING ENABLED ]
+        [ SYSTEM NODE ACTIVE ]
+        [ MONITORING ENABLED ]
       </div>
+
     </div>
+
 
     <div class="status-card">
 
@@ -260,22 +299,27 @@
         </div>
 
         <div class="risk-number">
-          <span id="risk">0</span>%
+          <span id="risk">
+            0
+          </span>%
         </div>
 
         <div class="risk-bar">
-          <div
-            class="risk-fill"
-            id="riskFill">
+
+          <div class="risk-fill" id="riskFill">
           </div>
+
         </div>
 
       </div>
+
     </div>
+
 
     <div class="grid">
 
       <div class="card">
+
         <div class="label">
           // CPU LOAD
         </div>
@@ -283,9 +327,12 @@
         <div class="value" id="cpu">
           --%
         </div>
+
       </div>
 
+
       <div class="card">
+
         <div class="label">
           // MEMORY
         </div>
@@ -293,9 +340,12 @@
         <div class="value" id="memory">
           --%
         </div>
+
       </div>
 
+
       <div class="card">
+
         <div class="label">
           // CONNECTIONS
         </div>
@@ -303,9 +353,11 @@
         <div class="value" id="connections">
           --
         </div>
+
       </div>
 
     </div>
+
 
     <div class="panel">
 
@@ -319,6 +371,7 @@
 
     </div>
 
+
     <div class="panel">
 
       <div class="panel-title">
@@ -330,6 +383,7 @@
       </div>
 
     </div>
+
 
     <div class="panel">
 
@@ -351,6 +405,7 @@
 
     </div>
 
+
     <div class="panel">
 
       <div class="panel-title">
@@ -358,25 +413,28 @@
       </div>
 
       <div id="reasons">
-        Waiting for telemetry...
+        Waiting...
       </div>
 
-      <div
-        class="baseline"
-        id="baseline">
+      <div class="baseline" id="baseline">
       </div>
 
     </div>
 
+
     <div class="footer">
-      SENTINEL NODE // LOCAL SECURITY MONITOR //
+      SENTINEL NODE //
+      LOCAL SECURITY MONITOR //
       REFRESH RATE: 5 SEC
     </div>
 
   </div>
 
+
   <script>
-    const hostname = "Sasacatt";
+    const hostname =
+      "Sasacatt";
+
 
     const chartOptions = {
       responsive: true,
@@ -386,10 +444,7 @@
       plugins: {
         legend: {
           labels: {
-            color: "#00ff88",
-            font: {
-              family: "Courier New"
-            }
+            color: "#00ff88"
           }
         }
       },
@@ -397,12 +452,12 @@
       scales: {
         x: {
           ticks: {
-            color: "#006d3b",
-            maxTicksLimit: 8
+            color: "#006d3b"
           },
 
           grid: {
-            color: "rgba(0,255,136,0.08)"
+            color:
+              "rgba(0,255,136,0.08)"
           }
         },
 
@@ -412,206 +467,210 @@
           },
 
           grid: {
-            color: "rgba(0,255,136,0.08)"
+            color:
+              "rgba(0,255,136,0.08)"
           }
         }
       }
     };
 
 
-    const cpuChart = new Chart(
-      document.getElementById("cpuChart"),
-      {
-        type: "line",
+    function createChart(
+      element,
+      label
+    ) {
+      return new Chart(
+        document.getElementById(
+          element
+        ),
+        {
+          type: "line",
 
-        data: {
-          labels: [],
+          data: {
+            labels: [],
 
-          datasets: [{
-            label: "CPU %",
-            data: [],
-            borderColor: "#00ff88",
-            backgroundColor: "rgba(0,255,136,0.08)",
-            tension: 0.25,
-            fill: true,
-            pointRadius: 1
-          }]
-        },
+            datasets: [
+              {
+                label: label,
+                data: [],
+                borderColor:
+                  "#00ff88",
 
-        options: chartOptions
-      }
-    );
+                backgroundColor:
+                  "rgba(0,255,136,0.08)",
 
+                tension: 0.25,
+                fill: true,
+                pointRadius: 1
+              }
+            ]
+          },
 
-    const memoryChart = new Chart(
-      document.getElementById("memoryChart"),
-      {
-        type: "line",
-
-        data: {
-          labels: [],
-
-          datasets: [{
-            label: "MEMORY %",
-            data: [],
-            borderColor: "#00ff88",
-            backgroundColor: "rgba(0,255,136,0.08)",
-            tension: 0.25,
-            fill: true,
-            pointRadius: 1
-          }]
-        },
-
-        options: chartOptions
-      }
-    );
+          options:
+            chartOptions
+        }
+      );
+    }
 
 
-    const connectionsChart = new Chart(
-      document.getElementById("connectionsChart"),
-      {
-        type: "line",
+    const cpuChart =
+      createChart(
+        "cpuChart",
+        "CPU %"
+      );
 
-        data: {
-          labels: [],
 
-          datasets: [{
-            label: "CONNECTIONS",
-            data: [],
-            borderColor: "#00ff88",
-            backgroundColor: "rgba(0,255,136,0.08)",
-            tension: 0.25,
-            fill: true,
-            pointRadius: 1
-          }]
-        },
+    const memoryChart =
+      createChart(
+        "memoryChart",
+        "MEMORY %"
+      );
 
-        options: chartOptions
-      }
-    );
+
+    const connectionsChart =
+      createChart(
+        "connectionsChart",
+        "CONNECTIONS"
+      );
 
 
     async function loadDashboard() {
-      try {
-        const response = await fetch(
+      const response =
+        await fetch(
           `/api/v1/dashboard/${hostname}`
         );
 
-        const data = await response.json();
+      const data =
+        await response.json();
 
-        document.getElementById(
-          "hostname"
-        ).innerText = data.hostname;
 
-        document.getElementById(
-          "status"
-        ).innerText = data.status;
+      document.getElementById(
+        "hostname"
+      ).innerText =
+        data.hostname;
 
-        document.getElementById(
-          "risk"
-        ).innerText = data.risk_score;
 
-        document.getElementById(
-          "riskFill"
-        ).style.width =
-          data.risk_score + "%";
+      document.getElementById(
+        "status"
+      ).innerText =
+        data.status;
 
-        document.getElementById(
-          "cpu"
-        ).innerText =
-          data.metrics.cpu + "%";
 
-        document.getElementById(
-          "memory"
-        ).innerText =
-          data.metrics.memory + "%";
+      document.getElementById(
+        "risk"
+      ).innerText =
+        data.risk_score;
 
-        document.getElementById(
-          "connections"
-        ).innerText =
-          data.metrics.connections;
 
-        if (data.reasons.length === 0) {
-          document.getElementById(
-            "reasons"
-          ).innerText =
-            "> No anomalous behavior detected.";
-        } else {
-          document.getElementById(
-            "reasons"
-          ).innerHTML =
-            data.reasons
-              .map(
-                reason =>
-                  "> " + reason
-              )
-              .join("<br>");
-        }
+      document.getElementById(
+        "riskFill"
+      ).style.width =
+        data.risk_score + "%";
 
-        document.getElementById(
-          "baseline"
-        ).innerText =
-          `BASELINE SAMPLES: ${data.baseline.samples}`;
 
-      } catch (error) {
-        document.getElementById(
-          "status"
-        ).innerText =
-          "OFFLINE";
+      document.getElementById(
+        "cpu"
+      ).innerText =
+        data.metrics.cpu + "%";
 
+
+      document.getElementById(
+        "memory"
+      ).innerText =
+        data.metrics.memory + "%";
+
+
+      document.getElementById(
+        "connections"
+      ).innerText =
+        data.metrics.connections;
+
+
+      if (
+        !data.reasons ||
+        data.reasons.length === 0
+      ) {
         document.getElementById(
           "reasons"
         ).innerText =
-          "> CONNECTION TO SENTINEL SERVER LOST.";
-
-        console.error(error);
+          "> No anomalous behavior detected.";
+      } else {
+        document.getElementById(
+          "reasons"
+        ).innerHTML =
+          data.reasons
+            .map(
+              reason =>
+                `> ${reason}`
+            )
+            .join("<br>");
       }
+
+
+      document.getElementById(
+        "baseline"
+      ).innerText =
+        `BASELINE SAMPLES: ${data.baseline.samples}`;
     }
 
 
     async function loadHosts() {
-      try {
-        const response = await fetch(
+      const response =
+        await fetch(
           "/api/v1/hosts"
         );
 
-        const data = await response.json();
+      const data =
+        await response.json();
 
-        const container =
-          document.getElementById(
-            "hostsList"
-          );
+      const container =
+        document.getElementById(
+          "hostsList"
+        );
 
-        if (!data.hosts ||
-            data.hosts.length === 0) {
 
-          container.innerHTML =
-            "> No hosts detected.";
-
-          return;
-        }
-
+      if (
+        !data.hosts ||
+        data.hosts.length === 0
+      ) {
         container.innerHTML =
-          data.hosts
-            .map(host => {
+          "> No hosts detected.";
+
+        return;
+      }
+
+
+      container.innerHTML =
+        data.hosts
+          .map(
+            host => {
 
               const indicator =
-                host.connection_status === "ONLINE"
+                host.connection_status
+                  === "ONLINE"
                   ? "●"
                   : "○";
+
 
               const lastSeen =
                 new Date(
                   host.last_seen
                 ).toLocaleTimeString();
 
+
               return `
                 <div class="host-row">
 
-                  <div class="host-name">
+                  <a
+                    class="host-link"
+                    href="/host/${encodeURIComponent(
+                host.hostname
+              )}">
                     ${indicator}
                     ${host.hostname}
-                  </div>
+                  </a>
+
+                  <br>
 
                   NETWORK:
                   ${host.connection_status}
@@ -653,53 +712,48 @@
 
                 </div>
               `;
-            })
-            .join("");
-
-      } catch (error) {
-        document.getElementById(
-          "hostsList"
-        ).innerText =
-          "> Unable to load hosts.";
-
-        console.error(
-          "Erro ao carregar hosts:",
-          error
-        );
-      }
+            }
+          )
+          .join("");
     }
 
 
     async function loadEvents() {
-      try {
-        const response = await fetch(
+      const response =
+        await fetch(
           "/api/v1/events?limit=20"
         );
 
-        const data = await response.json();
+      const data =
+        await response.json();
 
-        const container =
-          document.getElementById(
-            "eventsList"
-          );
+      const container =
+        document.getElementById(
+          "eventsList"
+        );
 
-        if (!data.events ||
-            data.events.length === 0) {
 
-          container.innerHTML =
-            "> No events recorded.";
-
-          return;
-        }
-
+      if (
+        !data.events ||
+        data.events.length === 0
+      ) {
         container.innerHTML =
-          data.events
-            .map(event => {
+          "> No events recorded.";
+
+        return;
+      }
+
+
+      container.innerHTML =
+        data.events
+          .map(
+            event => {
 
               const time =
                 new Date(
                   event.timestamp
                 ).toLocaleTimeString();
+
 
               return `
                 <div class="event-row">
@@ -722,78 +776,73 @@
 
                 </div>
               `;
-            })
-            .join("");
-
-      } catch (error) {
-        document.getElementById(
-          "eventsList"
-        ).innerText =
-          "> Unable to load events.";
-
-        console.error(
-          "Erro ao carregar eventos:",
-          error
-        );
-      }
+            }
+          )
+          .join("");
     }
 
 
     async function loadHistory() {
-      try {
-        const response = await fetch(
+      const response =
+        await fetch(
           `/api/v1/history/${hostname}?limit=30`
         );
 
-        const data = await response.json();
+      const data =
+        await response.json();
 
-        const labels =
-          data.history.map(
-            item =>
-              new Date(
-                item.timestamp
-              ).toLocaleTimeString()
-          );
 
-        cpuChart.data.labels =
-          labels;
-
-        cpuChart.data.datasets[0].data =
-          data.history.map(
-            item =>
-              item.cpu_percent
-          );
-
-        cpuChart.update();
-
-        memoryChart.data.labels =
-          labels;
-
-        memoryChart.data.datasets[0].data =
-          data.history.map(
-            item =>
-              item.memory_percent
-          );
-
-        memoryChart.update();
-
-        connectionsChart.data.labels =
-          labels;
-
-        connectionsChart.data.datasets[0].data =
-          data.history.map(
-            item =>
-              item.active_connections
-          );
-
-        connectionsChart.update();
-
-      } catch (error) {
-        console.error(
-          "Erro ao carregar histórico:",
-          error
+      const labels =
+        data.history.map(
+          item =>
+            new Date(
+              item.timestamp
+            ).toLocaleTimeString()
         );
-      }
+
+
+      cpuChart.data.labels =
+        labels;
+
+      cpuChart
+        .data
+        .datasets[0]
+        .data =
+        data.history.map(
+          item =>
+            item.cpu_percent
+        );
+
+
+      memoryChart.data.labels =
+        labels;
+
+      memoryChart
+        .data
+        .datasets[0]
+        .data =
+        data.history.map(
+          item =>
+            item.memory_percent
+        );
+
+
+      connectionsChart.data.labels =
+        labels;
+
+      connectionsChart
+        .data
+        .datasets[0]
+        .data =
+        data.history.map(
+          item =>
+            item.active_connections
+        );
+
+
+      cpuChart.update();
+      memoryChart.update();
+      connectionsChart.update();
     }
 
 
@@ -822,8 +871,8 @@
       loadHistory,
       5000
     );
-
   </script>
 
 </body>
+
 </html>
